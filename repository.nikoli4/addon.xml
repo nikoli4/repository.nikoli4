@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="repository.nikoli4"
        name="nikoli4's Kodi Repository"
-       version="1.0.0"
+       version="1.0.1"
        provider-name="nikoli4">
 
     <extension point="xbmc.addon.repository">
@@ -16,6 +16,10 @@
     <extension point="xbmc.addon.metadata">
         <summary lang="en_GB">nikoli4's Kodi add-on repository</summary>
         <description lang="en_GB">Repository for Advanced Kodi Launcher and related community-maintained add-ons.</description>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
         <platform>all</platform>
     </extension>
 
