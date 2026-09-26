@@ -67,9 +67,11 @@ $Root = Split-Path -Parent $PSScriptRoot
 $AddonDirs = @(
     "repository.nikoli4",
     "plugin.program.akl",
-    "script.akl.screenscraper",
+    "script.module.akl",
     "script.akl.defaults",
-    "skin.arctic.zephyr.mod"
+    "script.akl.screenscraper",
+    "script.akl.tgdbscraper",
+    "skin.arctic.zephyr.akl"
 )
 
 $xmlParts = @()
