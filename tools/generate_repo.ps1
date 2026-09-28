@@ -157,14 +157,14 @@ $md5Path = Join-Path $Root "addons.xml.md5"
 
 $builder = New-Object System.Text.StringBuilder
 
-[void]$builder.AppendLine('<?xml version="1.0" encoding="UTF-8"?>')
-[void]$builder.AppendLine('<addons>')
+[void]$builder.Append('<?xml version="1.0" encoding="UTF-8"?>' + "`n")
+[void]$builder.Append('<addons>' + "`n")
 
 foreach ($part in $xmlParts) {
-    [void]$builder.AppendLine($part)
+    [void]$builder.Append($part + "`n")
 }
 
-[void]$builder.AppendLine('</addons>')
+[void]$builder.Append('</addons>' + "`n")
 
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
