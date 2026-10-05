@@ -71,6 +71,7 @@ $AddonDirs = @(
     "script.akl.defaults",
     "script.akl.screenscraper",
     "script.akl.tgdbscraper",
+    "script.akl.arcadedb",
     "skin.arctic.zephyr.akl"
 )
 
