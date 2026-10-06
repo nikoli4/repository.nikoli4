@@ -144,6 +144,59 @@ foreach ($folder in $AddonDirs) {
         }
     }
 
+    # ------------------------------------------------------------
+    # Validate separately hosted repository artwork
+    #
+    # Kodi repository metadata references icon/fanart/screenshots
+    # as files beside the release ZIP. Verify every local media/*
+    # reference in addon.xml actually exists in the repository.
+    # ------------------------------------------------------------
+
+    $assetPaths = @()
+
+    $assetNodes = $addonXml.SelectNodes(
+        '//extension[@point="xbmc.addon.metadata"]/assets/*'
+    )
+
+    foreach ($assetNode in @($assetNodes)) {
+
+        $assetPath = [string]$assetNode.InnerText
+
+        if (
+            -not [string]::IsNullOrWhiteSpace($assetPath) -and
+            $assetPath -notmatch '^[a-zA-Z]+://' -and
+            $assetPath -match '^media[\\/]'
+        ) {
+            $assetPaths += $assetPath
+        }
+    }
+
+    $assetPaths = @(
+        $assetPaths |
+            Sort-Object -Unique
+    )
+
+    foreach ($assetPath in $assetPaths) {
+
+        $normalizedAssetPath = $assetPath.Replace('/', '\')
+        $repositoryAssetPath = Join-Path $folderPath $normalizedAssetPath
+
+        if (-not (Test-Path $repositoryAssetPath -PathType Leaf)) {
+
+            Write-Host ""
+            Write-Host "ERROR: Repository artwork is missing." -ForegroundColor Red
+            Write-Host "Add-on:   $($addonXml.addon.id)"
+            Write-Host "Version:  $($addonXml.addon.version)"
+            Write-Host "Metadata: $assetPath"
+            Write-Host "Expected: $repositoryAssetPath"
+            Write-Host ""
+
+            throw "Missing repository artwork for $($addonXml.addon.id)."
+        }
+
+        Write-Host "Validated artwork: $($addonXml.addon.id)/$($assetPath.Replace('\','/'))"
+    }
+
     $id = $addonXml.addon.id
     $version = $addonXml.addon.version
 
