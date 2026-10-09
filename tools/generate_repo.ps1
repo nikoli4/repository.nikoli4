@@ -1,3 +1,37 @@
+function Get-LatestAddonZip {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$FolderPath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$AddonId
+    )
+
+    $files = @(Get-ChildItem -LiteralPath $FolderPath -File -Filter "*.zip")
+    $candidates = @()
+
+    foreach ($file in $files) {
+        $pattern = '^' + [regex]::Escape($AddonId) + '-(\d+\.\d+\.\d+)\.zip$'
+
+        if ($file.Name -notmatch $pattern) {
+            throw "Unexpected ZIP filename in ${AddonId}: $($file.Name)"
+        }
+
+        $candidates += [pscustomobject]@{
+            File = $file
+            Version = [version]$Matches[1]
+        }
+    }
+
+    if ($candidates.Count -eq 0) {
+        throw "No ZIP found for $AddonId"
+    }
+
+    return ($candidates |
+        Sort-Object Version |
+        Select-Object -Last 1).File
+}
+
 $ErrorActionPreference = "Stop"
 
 function Test-KodiZip {
@@ -82,9 +116,7 @@ foreach ($folder in $AddonDirs) {
     if ($folder -eq "repository.nikoli4") {
         $folderPath = Join-Path $Root $folder
 
-        $repoZip = Get-ChildItem $folderPath -Filter "repository.nikoli4-*.zip" |
-                   Sort-Object Name |
-                   Select-Object -Last 1
+        $repoZip = Get-LatestAddonZip -FolderPath $folderPath -AddonId $folder
 
         if (-not $repoZip) {
             throw "No repository ZIP found for $folder"
@@ -103,9 +135,7 @@ foreach ($folder in $AddonDirs) {
     else {
         $folderPath = Join-Path $Root $folder
 
-        $zip = Get-ChildItem $folderPath -Filter *.zip |
-               Sort-Object Name |
-               Select-Object -Last 1
+        $zip = Get-LatestAddonZip -FolderPath $folderPath -AddonId $folder
 
         if (-not $zip) {
             throw "No ZIP found for $folder"
