@@ -108,6 +108,7 @@ $AddonDirs = @(
     "script.akl.steam",
     "script.akl.steamgriddb",
     "script.akl.managedlauncher",
+    "script.akl.retroarchlauncher",
     "script.akl.arcadedb",
     "skin.arctic.zephyr.akl"
 )
