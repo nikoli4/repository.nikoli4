@@ -2,10 +2,15 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$SourceRepo,
 
-    [string]$OutputRoot = "C:\GitHub\_release_staging"
+    [string]$OutputRoot = "C:\GitHub\_release_staging",
+    [string]$ReleaseTag
 )
 
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($ReleaseTag)) {
+    $ReleaseTag = $null
+}
 
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -34,6 +39,8 @@ if ([string]::IsNullOrWhiteSpace($AddonId)) {
 if ([string]::IsNullOrWhiteSpace($Version)) {
     throw "addon.xml contains no addon version."
 }
+
+$EffectiveTag = if ($ReleaseTag) { $ReleaseTag } else { $Version }
 
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Cyan
@@ -70,7 +77,7 @@ try {
 
     $TagsAtHead = @(git tag --points-at HEAD)
 
-    if ($TagsAtHead -notcontains $Version) {
+    if ($TagsAtHead -notcontains $EffectiveTag) {
         Write-Host ""
         Write-Host "Tags at HEAD:" -ForegroundColor Yellow
 
@@ -81,13 +88,13 @@ try {
             $TagsAtHead | ForEach-Object { Write-Host "  $_" }
         }
 
-        throw "Version $Version is not tagged at HEAD."
+        throw "Release tag $EffectiveTag is not at HEAD."
     }
 
-    $TagCommit = (git rev-list -n 1 $Version).Trim()
+    $TagCommit = (git rev-list -n 1 $EffectiveTag).Trim()
 
     if ($TagCommit -ne $Head) {
-        throw "Tag $Version does not point to HEAD."
+        throw "Tag $EffectiveTag does not point to HEAD."
     }
 }
 finally {
@@ -95,7 +102,7 @@ finally {
 }
 
 Write-Host "HEAD:    $Head"
-Write-Host "Tag:     $Version" -ForegroundColor Green
+Write-Host "Tag:     $EffectiveTag" -ForegroundColor Green
 
 # ------------------------------------------------------------
 # Prepare clean staging area
@@ -126,7 +133,7 @@ $TempTar = Join-Path $AddonOutputRoot "$AddonId-$Version.tar"
 Push-Location $SourceRepo
 
 try {
-    git archive --format=tar --output="$TempTar" $Version
+    git archive --format=tar --output="$TempTar" $EffectiveTag
 
     if ($LASTEXITCODE -ne 0) {
         throw "git archive failed."
@@ -143,6 +150,46 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Remove-Item $TempTar -Force
+
+# Remove development-only files from release export.
+# Source Git repositories remain unchanged.
+$ExcludedDirectories = @(
+    "tests",
+    ".build",
+    ".github",
+    ".vscode",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache"
+)
+
+$ExcludedFiles = @(
+    ".flake8",
+    ".gitignore",
+    ".gitattributes",
+    "pytest.ini",
+    "GitVersion.yml",
+    "NOTES.md",
+    "requirements.txt"
+)
+
+Get-ChildItem $ExportRoot -Recurse -Directory -Force |
+    Where-Object { $_.Name -in $ExcludedDirectories } |
+    Sort-Object { $_.FullName.Length } -Descending |
+    ForEach-Object {
+        if (Test-Path -LiteralPath $_.FullName) {
+            Remove-Item -LiteralPath $_.FullName -Recurse -Force
+        }
+    }
+
+Get-ChildItem $ExportRoot -Recurse -File -Force |
+    Where-Object {
+        $_.Name -in $ExcludedFiles -or
+        $_.Extension -in @(".pyc", ".pyo", ".bak", ".tmp", ".log")
+    } |
+    Remove-Item -Force
+
+Write-Host "Development-only files excluded from release export." -ForegroundColor Green
 
 # ------------------------------------------------------------
 # Validate exported addon.xml

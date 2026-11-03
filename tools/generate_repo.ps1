@@ -105,6 +105,9 @@ $AddonDirs = @(
     "script.akl.defaults",
     "script.akl.screenscraper",
     "script.akl.tgdbscraper",
+    "script.akl.steam",
+    "script.akl.steamgriddb",
+    "script.akl.managedlauncher",
     "script.akl.arcadedb",
     "skin.arctic.zephyr.akl"
 )
